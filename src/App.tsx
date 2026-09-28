@@ -55,13 +55,14 @@ function failureDialog(reason: AttentionFailure): Dialog {
 export function App() {
   const [dialog, setDialog] = createSignal<Dialog | null>(cameraDialog)
   const [playbackEnabled, setPlaybackEnabled] = createSignal(false)
+  const [resumePlayback, setResumePlayback] = createSignal(false)
   const [showMembership, setShowMembership] = createSignal(false)
   const [ads, setAds] = createSignal<Ad[]>([])
   const [adIndex, setAdIndex] = createSignal(0)
   const [adsError, setAdsError] = createSignal('')
   let monitor: AttentionMonitor | undefined
   let releaseTimer: ReturnType<typeof setTimeout> | undefined
-  let hasPlayed = false
+  let currentlyPlaying = false
 
   const clearReleaseTimer = () => {
     if (releaseTimer !== undefined) clearTimeout(releaseTimer)
@@ -69,13 +70,14 @@ export function App() {
   }
 
   const handlePlaybackChange = (active: boolean) => {
+    currentlyPlaying = active
     monitor?.setPlaybackActive(active)
     if (active) {
-      hasPlayed = true
+      setResumePlayback(false)
       clearReleaseTimer()
       return
     }
-    if (!hasPlayed || document.hidden || showMembership() || dialog()?.kind === 'success') return
+    if (document.hidden || showMembership() || dialog()?.kind === 'success') return
     clearReleaseTimer()
     releaseTimer = setTimeout(() => {
       releaseTimer = undefined
@@ -87,6 +89,7 @@ export function App() {
   const handleVisibilityChange = () => {
     if (!document.hidden || dialog()?.kind === 'success') return
     clearReleaseTimer()
+    setResumePlayback(value => value || currentlyPlaying)
     monitor?.stop()
     setPlaybackEnabled(false)
     setShowMembership(false)
@@ -123,12 +126,15 @@ export function App() {
       onReady: () => {
         setDialog(null)
         setPlaybackEnabled(true)
+        handlePlaybackChange(false)
       },
       onFailure: reason => {
+        setResumePlayback(true)
         setPlaybackEnabled(false)
         setDialog(failureDialog(reason))
       },
       onError: message => {
+        setResumePlayback(value => value || currentlyPlaying)
         setPlaybackEnabled(false)
         setDialog({ ...cameraDialog, content: message })
       },
@@ -156,7 +162,9 @@ export function App() {
   }
 
   const complete = () => {
+    setResumePlayback(false)
     if (adIndex() + 1 < ads().length) {
+      handlePlaybackChange(false)
       setAdIndex(index => index + 1)
       return
     }
@@ -176,22 +184,26 @@ export function App() {
     disableSeeking
     noticeOpen={!!dialog() || showMembership()}
     playbackEnabled={playbackEnabled()}
+    resumePlayback={resumePlayback()}
     onEnded={complete}
     onPlaybackChange={handlePlaybackChange}
     onPlayRequest={() => {
       if (document.hidden || dialog() || showMembership()) return
       clearReleaseTimer()
+      setResumePlayback(true)
       setDialog(resumeDialog)
       monitor?.retry()
     }}
     onShowNotice={() => {
       clearReleaseTimer()
+      setResumePlayback(currentlyPlaying)
       setPlaybackEnabled(false)
       setDialog(cameraDialog)
       monitor?.retry()
     }}
     onSkip={() => {
       clearReleaseTimer()
+      setResumePlayback(false)
       monitor?.stop()
       setPlaybackEnabled(false)
       setDialog(null)

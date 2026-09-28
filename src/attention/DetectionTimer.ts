@@ -6,7 +6,7 @@ const MAX_COUNTED_INTERVAL_MS = 320
 const STREAK_RESET_GAP_MS = 5000
 const DEFAULT_FRAME_INTERVAL_MS = 80
 const INTERVAL_SAMPLE_COUNT = 9
-const MIN_CLOSED_FRAMES = 3
+const MIN_CLOSED_FRAMES = 5
 
 export class DetectionTimer {
   private lastSampleAt: number | null = null
