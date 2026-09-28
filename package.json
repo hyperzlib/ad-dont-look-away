@@ -1,0 +1,24 @@
+{
+  "name": "dont-look-away",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-mediapipe-wasm.mjs",
+    "dev": "vite --host 0.0.0.0",
+    "prebuild": "node scripts/copy-mediapipe-wasm.mjs",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test tests/detection-timer.test.mjs tests/eye-closure.test.mjs",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "solid-js": "^1.9.9"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vite-plugin-solid": "^2.11.8"
+  }
+}
